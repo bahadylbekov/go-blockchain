@@ -2,8 +2,8 @@ package blockchain
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"strconv"
+	"encoding/gob"
+	"log"
 	"time"
 )
 
@@ -16,24 +16,43 @@ type Block struct {
 	Nonce         int
 }
 
-func (b *Block) SetHash() []byte {
-	timestamp := []byte(strconv.FormatInt(b.Timestamp, 10))
-	headers := bytes.Join([][]byte{b.PrevBlockHash, b.Data, timestamp}, []byte{})
-	hash := sha256.Sum256(headers)
-
-	b.Hash = hash[:]
-	return b.Hash
+func GenesisBlock() *Block {
+	return NewBlock("Genesis block", []byte{})
 }
 
+// Function for cleating a new block, doing PoW inside a function
 func NewBlock(data string, prevBlockHash []byte) (b *Block) {
 	block := &Block{time.Now().Unix(), []byte(data), prevBlockHash, []byte{}, 0}
 
-	// pow := consensus.NewProofOfWork(block)
-	// nonce, hash := pow.Run()
+	pow := NewProofOfWork(block)
+	nonce, hash := pow.Run()
 
-	// block.Hash = hash[:]
-	// block.Nonce = nonce
-	block.SetHash()
+	block.Hash = hash[:]
+	block.Nonce = nonce
 
 	return block
+}
+
+func HandleErr(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+func (b *Block) Serialize() []byte {
+	var res bytes.Buffer
+	encoder := gob.NewEncoder(&res)
+	err := encoder.Encode(b)
+	HandleErr(err)
+
+	return res.Bytes()
+}
+
+func Deserialize(data []byte) *Block {
+	var block Block
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	err := decoder.Decode(&block)
+	HandleErr(err)
+
+	return &block
 }

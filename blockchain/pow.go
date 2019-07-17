@@ -1,31 +1,36 @@
-package consensus
+package blockchain
 
 import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"math"
 	"math/big"
-
-	"github.com/bahadylbekov/go-blockchain/blockchain"
+	"strconv"
 )
 
-const targetBits = 24
+const targetBits = 12
 
 type ProofOfWork struct {
-	Block  *blockchain.Block
+	Block  *Block
 	Target *big.Int
 }
 
-func NewProofOfWork(b *md.Block) *md.ProofOfWork {
+func NewProofOfWork(b *Block) *ProofOfWork {
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256-targetBits))
 
-	pow := &md.ProofOfWork{b, target}
+	pow := &ProofOfWork{b, target}
 
 	return pow
 }
 
-func (pow *md.ProofOfWork) prepareData(nonce int) []byte {
+func IntToHex(n int64) []byte {
+	return []byte(strconv.FormatInt(n, 16))
+}
+
+// Data preparation
+func (pow *ProofOfWork) prepareData(nonce int) []byte {
 	data := bytes.Join(
 		[][]byte{
 			pow.Block.PrevBlockHash,
@@ -39,20 +44,21 @@ func (pow *md.ProofOfWork) prepareData(nonce int) []byte {
 	return data
 }
 
-func (pow *md.ProofOfWork) Run() (int, []byte) {
+// Init ProofOfWork algorithm
+func (pow *ProofOfWork) Run() (int, []byte) {
 	var hashInt big.Int
 	var hash [32]byte
 	nonce := 0
 
-	fmt.Printf("Mining block containing \"%s\"n", pow.block.Data)
+	fmt.Printf("Mining block containing \"%s\"n", pow.Block.Data)
 
-	for nonce < maxNonce {
+	for nonce < math.MaxInt64 {
 		data := pow.prepareData(nonce)
 		hash = sha256.Sum256(data)
 		fmt.Printf("\r%x", hash)
 		hashInt.SetBytes(hash[:])
 
-		if hashInt.Cmp(pow.target) == 1 {
+		if hashInt.Cmp(pow.Target) == -1 {
 			break
 		} else {
 			nonce++
@@ -64,14 +70,15 @@ func (pow *md.ProofOfWork) Run() (int, []byte) {
 	return nonce, hash[:]
 }
 
-func (pow *md.ProofOfWork) Validate() bool {
+// Validation of ProofOfWork hash returns isValid result
+func (pow *ProofOfWork) Validate() bool {
 	var hashInt big.Int
 
-	data := pow.prepareData(pow.block.Nonce)
+	data := pow.prepareData(pow.Block.Nonce)
 	hash := sha256.Sum256(data)
 	hashInt.SetBytes(hash[:])
 
-	isValid := hashInt.Cmp(pow.target) == -1
+	isValid := hashInt.Cmp(pow.Target) == -1
 
 	return isValid
 }
