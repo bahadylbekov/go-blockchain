@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-const targetBits = 12
+const targetBits = 14
 
 type ProofOfWork struct {
 	Block  *Block

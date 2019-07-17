@@ -22,16 +22,14 @@ type BlockchainIterator struct {
 	Database    *badger.DB
 }
 
+// AddBlock function adds one more block into blockchain
 func (chain *Blockchain) AddBlock(data string) {
 	var lastHash []byte
 
 	err := chain.Database.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte("ln"))
+		item, err := txn.Get([]byte("lh"))
 		HandleErr(err)
-		err = item.Value(func(val []byte) error {
-			lastHash = append([]byte{}, lastHash...)
-			return nil
-		})
+		lastHash, err = item.Value()
 
 		return err
 	})
@@ -42,7 +40,7 @@ func (chain *Blockchain) AddBlock(data string) {
 	err = chain.Database.Update(func(txn *badger.Txn) error {
 		err := txn.Set(newBlock.Hash, newBlock.Serialize())
 		HandleErr(err)
-		err = txn.Set([]byte("ln"), newBlock.Hash)
+		err = txn.Set([]byte("lh"), newBlock.Hash)
 
 		chain.LastHash = newBlock.Hash
 
@@ -54,9 +52,9 @@ func (chain *Blockchain) AddBlock(data string) {
 func InitBlockchain() *Blockchain {
 	var lastHash []byte
 
-	opts := badger.DefaultOptions(dbPath)
-	// opts.Dir = dbPath
-	// opts.ValueDir = dbPath
+	opts := badger.DefaultOptions
+	opts.Dir = dbPath
+	opts.ValueDir = dbPath
 
 	db, err := badger.Open(opts)
 	HandleErr(err)
@@ -77,10 +75,6 @@ func InitBlockchain() *Blockchain {
 			item, err := txn.Get([]byte("lh"))
 			HandleErr(err)
 			lastHash, err = item.Value()
-			// err = item.Value(func(val []byte) error {
-			// 	lastHash = append([]byte{}, lastHash...)
-			// 	return nil
-			// })
 			return err
 		}
 	})
@@ -91,22 +85,20 @@ func InitBlockchain() *Blockchain {
 	return &blockchain
 }
 
+// Iterator - parser of blockchain
 func (chain *Blockchain) Iterator() *BlockchainIterator {
 	iter := &BlockchainIterator{chain.LastHash, chain.Database}
 
 	return iter
 }
 
+// Next function - activate function for iterator
 func (iter *BlockchainIterator) Next() *Block {
 	var block *Block
 
 	err := iter.Database.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(iter.CurrentHash)
-		var encodedBlock []byte
-		err = item.Value(func(val []byte) error {
-			encodedBlock = append([]byte{}, encodedBlock...)
-			return nil
-		})
+		encodedBlock, err := item.Value()
 		block = Deserialize(encodedBlock)
 
 		return err
