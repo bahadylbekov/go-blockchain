@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/gob"
 	"log"
 	"time"
@@ -10,19 +11,31 @@ import (
 //  Block structure inside of blockchain
 type Block struct {
 	Timestamp     int64
-	Data          []byte
+	Transactions  []*Transaction
 	PrevBlockHash []byte
 	Hash          []byte
 	Nonce         int
 }
 
-func GenesisBlock() *Block {
-	return NewBlock("Genesis block", []byte{})
+func GenesisBlock(coinbase *Transaction) *Block {
+	return NewBlock([]*Transaction{coinbase}, []byte{})
+}
+
+func (b *Block) HashTransactions() []byte {
+	var txHashes [][]byte
+	var txHash [32]byte
+
+	for _, tx := range b.Transactions {
+		txHashes = append(txHashes, tx.ID)
+	}
+
+	txHash = sha256.Sum256(bytes.Join(txHashes, []byte{}))
+	return txHash[:]
 }
 
 // Function for cleating a new block, doing PoW inside a function
-func NewBlock(data string, prevBlockHash []byte) (b *Block) {
-	block := &Block{time.Now().Unix(), []byte(data), prevBlockHash, []byte{}, 0}
+func NewBlock(txs []*Transaction, prevBlockHash []byte) (b *Block) {
+	block := &Block{time.Now().Unix(), txs, prevBlockHash, []byte{}, 0}
 
 	pow := NewProofOfWork(block)
 	nonce, hash := pow.Run()
