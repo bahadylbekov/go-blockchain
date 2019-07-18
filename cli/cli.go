@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"runtime"
 	"strconv"
@@ -11,6 +12,12 @@ import (
 )
 
 type CommandLine struct {
+}
+
+func HandleErr(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func (cli *CommandLine) printUsage() {
@@ -99,19 +106,19 @@ func (cli *CommandLine) Run() {
 	switch os.Args[1] {
 	case "getbalance":
 		err := getBalanceCmd.Parse(os.Args[2:])
-		blockchain.HandleErr(err)
+		HandleErr(err)
 
 	case "createblockchain":
 		err := createBlockchainCmd.Parse(os.Args[2:])
-		blockchain.HandleErr(err)
+		HandleErr(err)
 
 	case "transfer":
 		err := transferCmd.Parse(os.Args[2:])
-		blockchain.HandleErr(err)
+		HandleErr(err)
 
 	case "chaindata":
 		err := chainDataCmd.Parse(os.Args[2:])
-		blockchain.HandleErr(err)
+		HandleErr(err)
 
 	default:
 		cli.printUsage()
