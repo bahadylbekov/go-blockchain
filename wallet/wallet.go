@@ -12,12 +12,24 @@ import (
 
 const (
 	checksumLength = 4
-	version        = byte{0x00}
+	version        = byte(0x00)
 )
 
 type Wallet struct {
 	PrivateKey ecdsa.PrivateKey
 	PublicKey  []byte
+}
+
+func (w Wallet) Address() []byte {
+	pubKeyHash := PublicKeyHash(w.PublicKey)
+
+	versionHash := append([]byte{version}, pubKeyHash...)
+	checksum := Checksum(versionHash)
+
+	fullHash := append(versionHash, checksum...)
+	address := Base58Encode(fullHash)
+
+	return address
 }
 
 func HandleErr(err error) {
@@ -47,11 +59,11 @@ func CreateWallet() *Wallet {
 func PublicKeyHash(pubkey []byte) []byte {
 	pubHash := sha256.Sum256(pubkey)
 
-	hashing := ripemd160.New()
-	_, err := hashing.Write(pubHash[:])
+	hasher := ripemd160.New()
+	_, err := hasher.Write(pubHash[:])
 	HandleErr(err)
 
-	publicRipemd := hashing.Sum(nil)
+	publicRipemd := hasher.Sum(nil)
 
 	return publicRipemd
 }
@@ -61,14 +73,4 @@ func Checksum(payload []byte) []byte {
 	secondHash := sha256.Sum256(firstHash[:])
 
 	return secondHash[:checksumLength]
-}
-
-func (w Wallet) Address() []byte {
-	pubKeyHash := PublicKeyHash(w.PublicKey)
-	versionHash := append([]byte{version}, pubKeyHash...)
-	checksum := Checksum(versionHash)
-
-	fullHash := append(checksum, versionHash...)
-	address := Base58Encoding(fullHash)
-	return address
 }

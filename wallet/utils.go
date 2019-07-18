@@ -1,20 +1,16 @@
 package wallet
 
 import (
-	"log"
-
-	"github.com/mr-tron/base58"
+	"github.com/btcsuite/btcutil/base58"
 )
 
-func Base58Encoding(input []byte) []byte {
-	encode := base58.Encode(input)
-	return []byte(encode)
+func Base58Encode(input []byte) []byte {
+	encoded := base58.Encode(input)
+
+	return []byte(encoded)
 }
 
-func Base58Decoding(input []byte) []byte {
-	decode, err := base58.Decode(string(input[:]))
-	if err != nil {
-		log.Panic(err)
-	}
-	return []byte(decode)
+func Base58Decode(input []byte) []byte {
+	decoded := base58.Decode(string(input[:]))
+	return decoded
 }
