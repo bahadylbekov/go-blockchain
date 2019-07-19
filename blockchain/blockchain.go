@@ -1,7 +1,9 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -231,4 +233,24 @@ Work:
 	}
 
 	return accumulated, unspentOuts
+}
+
+func (bc *Blockchain) FindTransaction(ID []byte) (Transaction, error) {
+	iter := bc.Iterator()
+
+	for {
+		block := iter.Next()
+
+		for _, tx := range block.Transactions {
+			if bytes.Compare(tx.ID, ID) == 0 {
+				return *tx, nil
+			}
+		}
+
+		if len(block.PrevBlockHash) == 0 {
+			break
+		}
+
+	}
+	return Transaction{}, errors.New("Transaction doesn't exist")
 }
