@@ -73,6 +73,9 @@ func (cli *CommandLine) createBlockchain(address string) {
 	chain := blockchain.InitBlockchain(address)
 	defer chain.Database.Close()
 
+	UTXOSet := blockchain.UTXOSet{chain}
+	UTXOSet.Reindex()
+
 	fmt.Printf("Blockchain created by %s\n", address)
 }
 
@@ -104,7 +107,7 @@ func (cli *CommandLine) reindexUTXO() {
 	UTXOSet.Reindex()
 
 	count := UTXOSet.CountUTXO()
-	fmt.Println("Done! There are %d transactions in the UTXO set. \n", count)
+	fmt.Printf("Done! There are %d transactions in the UTXO set. \n", count)
 }
 
 func (cli *CommandLine) transfer(from, to string, amount int) {
