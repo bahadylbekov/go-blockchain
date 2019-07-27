@@ -153,8 +153,8 @@ func (iter *BlockchainIterator) Next() *Block {
 	return block
 }
 
-func (chain *Blockchain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
-	var unspentTxs []Transaction
+func (chain *Blockchain) FindUnspentTransactions() map[string]TxOutputs {
+	UTXO := make(map[string]TxOutputs)
 
 	spentTXOs := make(map[string][]int)
 
@@ -175,16 +175,14 @@ func (chain *Blockchain) FindUnspentTransactions(pubKeyHash []byte) []Transactio
 						}
 					}
 				}
-				if out.IsLockByKey(pubKeyHash) {
-					unspentTxs = append(unspentTxs, *tx)
-				}
+				outs := UTXO[txID]
+				outs.Outputs = append(outs.Outputs, out)
+				UTXO[txID] = outs
 			}
 			if tx.IsCoinBase() == false {
 				for _, in := range tx.Inputs {
-					if in.UsesKey(pubKeyHash) {
-						inTxID := hex.EncodeToString(in.ID)
-						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Out)
-					}
+					inTxID := hex.EncodeToString(in.ID)
+					spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Out)
 				}
 			}
 		}
@@ -194,7 +192,7 @@ func (chain *Blockchain) FindUnspentTransactions(pubKeyHash []byte) []Transactio
 		}
 	}
 
-	return unspentTxs
+	return UTXO
 }
 
 func (chain *Blockchain) FindUTXO(pubKeyHash []byte) []TxOutput {
