@@ -35,13 +35,17 @@ func (tx *Transaction) Serialize() []byte {
 
 func CoinbaseTx(to, data string) *Transaction {
 	if data == "" {
-		fmt.Sprintf("Coinbase TX to: %s", to)
+		randData := make([]byte, 24)
+		_, err := rand.Read(randData)
+		HandleErr(err)
+		data = fmt.Sprintf("%x", randData)
+
 	}
 	txInput := TxInput{[]byte{}, -1, nil, []byte(data)}
 	txOutput := NewTxOutput(MiningReward, to)
 
 	tx := Transaction{nil, []TxInput{txInput}, []TxOutput{*txOutput}}
-	tx.SetId()
+	tx.ID = tx.Hash()
 
 	return &tx
 }
@@ -55,17 +59,6 @@ func (tx *Transaction) Hash() []byte {
 	hash = sha256.Sum256(newTx.Serialize())
 
 	return hash[:]
-}
-
-func (tx *Transaction) SetId() {
-	var hash [32]byte
-	var encoded bytes.Buffer
-	encode := gob.NewEncoder(&encoded)
-	err := encode.Encode(tx)
-	HandleErr(err)
-
-	hash = sha256.Sum256(encoded.Bytes())
-	tx.ID = hash[:]
 }
 
 func (tx *Transaction) IsCoinBase() bool {
